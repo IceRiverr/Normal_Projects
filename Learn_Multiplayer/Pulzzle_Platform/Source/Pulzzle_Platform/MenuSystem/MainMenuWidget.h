@@ -20,6 +20,10 @@ class PULZZLE_PLATFORM_API UMainMenuWidget : public UUserWidget
 public:
 	void SetMenuInterface(class IMenuInterface* MenuInterface);
 
+	void SetUp();
+
+	void TearDown();
+
 protected:
 	virtual bool Initialize();
 
@@ -30,6 +34,12 @@ private:
 	UFUNCTION()
 	void JoinServer();
 
+	UFUNCTION()
+	void OpenJoinMenu();
+
+	UFUNCTION()
+	void OpenMainMenu();
+
 private:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;
@@ -37,6 +47,25 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* JoinButton;
 
+	UPROPERTY(meta = (BindWidget))
+	class UButton* CancleJoinMenuButton;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton* ConfirmJoinMenuButton;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidgetSwitcher* MenuSwitcher;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* MainMenu;
+
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* JoinMenu;
+
+	UPROPERTY(meta = (BindWidget))
+	class UEditableTextBox* IPAddressField;
+
+
+
 	class IMenuInterface* MenuInterface;
-	
 };
