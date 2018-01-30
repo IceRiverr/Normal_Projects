@@ -8,51 +8,6 @@
 
 #include "MenuSystem/MenuInterface.h"
 
-void UMainMenuWidget::SetMenuInterface(class IMenuInterface* MenuInterface)
-{
-	this->MenuInterface = MenuInterface;
-}
-
-void UMainMenuWidget::SetUp()
-{
-	this->AddToViewport();
-
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		APlayerController* PlayerController = World->GetFirstPlayerController();
-		if (PlayerController)
-		{
-			FInputModeUIOnly InputModeData;
-			InputModeData.SetWidgetToFocus(this->TakeWidget());
-			InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			PlayerController->SetInputMode(InputModeData);
-
-			PlayerController->bShowMouseCursor = true;
-		}
-	}
-}
-
-void UMainMenuWidget::TearDown()
-{
-	this->RemoveFromViewport();
-
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		APlayerController* PlayerController = World->GetFirstPlayerController();
-
-		if (PlayerController)
-		{
-			FInputModeGameOnly InputModeData;
-			//InputModeData.SetConsumeCaptureMouseDown(false);
-			PlayerController->SetInputMode(InputModeData);
-
-			PlayerController->bShowMouseCursor = false;
-		}
-	}
-}
-
 bool UMainMenuWidget::Initialize()
 {
 	bool Success = Super::Initialize();
@@ -79,6 +34,11 @@ bool UMainMenuWidget::Initialize()
 	if (ConfirmJoinMenuButton)
 	{
 		ConfirmJoinMenuButton->OnClicked.AddDynamic(this, &UMainMenuWidget::JoinServer);
+	}
+
+	if (ExitGameButton)
+	{
+		ExitGameButton->OnClicked.AddDynamic(this, &UMainMenuWidget::ExitGame);
 	}
 
 	return true;
@@ -117,5 +77,18 @@ void UMainMenuWidget::OpenMainMenu()
 	if (MenuSwitcher && MainMenu)
 	{
 		MenuSwitcher->SetActiveWidget(MainMenu);
+	}
+}
+
+void UMainMenuWidget::ExitGame()
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		APlayerController* PlayerController = World->GetFirstPlayerController();
+		if (PlayerController)
+		{
+			PlayerController->ConsoleCommand("quit");
+		}
 	}
 }

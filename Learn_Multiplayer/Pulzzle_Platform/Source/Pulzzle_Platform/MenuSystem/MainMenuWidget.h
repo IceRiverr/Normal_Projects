@@ -3,9 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
-
-#include "MenuSystem/MenuInterface.h"
+#include "MenuSystem/BaseMenuWidget.h"
 
 #include "MainMenuWidget.generated.h"
 
@@ -13,16 +11,9 @@
  * 
  */
 UCLASS()
-class PULZZLE_PLATFORM_API UMainMenuWidget : public UUserWidget
+class PULZZLE_PLATFORM_API UMainMenuWidget : public UBaseMenuWidget
 {
 	GENERATED_BODY()
-
-public:
-	void SetMenuInterface(class IMenuInterface* MenuInterface);
-
-	void SetUp();
-
-	void TearDown();
 
 protected:
 	virtual bool Initialize();
@@ -40,6 +31,9 @@ private:
 	UFUNCTION()
 	void OpenMainMenu();
 
+	UFUNCTION()
+	void ExitGame();
+
 private:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;
@@ -54,6 +48,9 @@ private:
 	class UButton* ConfirmJoinMenuButton;
 
 	UPROPERTY(meta = (BindWidget))
+	class UButton* ExitGameButton;
+
+	UPROPERTY(meta = (BindWidget))
 	class UWidgetSwitcher* MenuSwitcher;
 
 	UPROPERTY(meta = (BindWidget))
@@ -64,8 +61,4 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	class UEditableTextBox* IPAddressField;
-
-
-
-	class IMenuInterface* MenuInterface;
 };
