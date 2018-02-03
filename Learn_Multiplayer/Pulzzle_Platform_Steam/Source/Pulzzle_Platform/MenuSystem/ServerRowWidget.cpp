@@ -8,6 +8,12 @@
 #include "MainMenuWidget.h"
 
 
+UServerRowWidget::UServerRowWidget(const FObjectInitializer& ObjectInitializer)
+	: UUserWidget(ObjectInitializer)
+{
+	bIsHeader = false;
+}
+
 void UServerRowWidget::SetUp(class UMainMenuWidget* MainMenu, uint32 SelectIndex)
 {
 	Parent = MainMenu;
@@ -24,7 +30,10 @@ bool UServerRowWidget::Initialize()
 
 	if (SelectButton)
 	{
-		SelectButton->OnClicked.AddDynamic(this, &UServerRowWidget::SelectRow);
+		if (bIsHeader == false)
+		{
+			SelectButton->OnClicked.AddDynamic(this, &UServerRowWidget::SelectRow);
+		}
 	}
 
 	return true;

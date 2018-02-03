@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Optional.h"
 #include "MenuSystem/BaseMenuWidget.h"
+#include "MenuSystem/ServerData.h"
 
 #include "MainMenuWidget.generated.h"
 
@@ -18,7 +19,7 @@ class PULZZLE_PLATFORM_API UMainMenuWidget : public UBaseMenuWidget
 public:
 	UMainMenuWidget(const FObjectInitializer & ObjectInitializer);
 
-	void SetServerList(const TArray<FString> ServerNames);
+	void SetServerList(const TArray<FServerData>& ServerNames);
 
 	void SetSelectIndex(uint32 Index);
 
@@ -43,6 +44,8 @@ private:
 
 	UFUNCTION()
 	void ExitGame();
+
+	void UpdateChilren();
 
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -77,5 +80,5 @@ private:
 
 	TSubclassOf<class UUserWidget> ServerRowClass;
 
-	TOptional<uint32> SelectIndex;
+	TOptional<uint32> SelectedIndex;
 };

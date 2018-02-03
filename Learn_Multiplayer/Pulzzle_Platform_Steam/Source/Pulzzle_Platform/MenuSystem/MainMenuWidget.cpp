@@ -21,7 +21,7 @@ UMainMenuWidget::UMainMenuWidget(const FObjectInitializer & ObjectInitializer)
 	}
 }
 
-void UMainMenuWidget::SetServerList(const TArray<FString> ServerNames)
+void UMainMenuWidget::SetServerList(const TArray<FServerData>& ServerNames)
 {
 	UWorld* World = this->GetWorld();
 	if (ServerList && World)
@@ -29,14 +29,19 @@ void UMainMenuWidget::SetServerList(const TArray<FString> ServerNames)
 		ServerList->ClearChildren();
 		
 		uint32 Select = 0;
-		for (const FString& ServerName : ServerNames)
+		for (const FServerData& ServerData : ServerNames)
 		{
 			UServerRowWidget* Row = CreateWidget<UServerRowWidget>(World, ServerRowClass);
 			if (Row)
 			{
 				Row->SetUp(this, Select);
 				Select++;
-				Row->ServerName->SetText(FText::FromString(ServerName));
+
+				Row->ServerName->SetText(FText::FromString(ServerData.ServerName));
+				Row->HostUserName->SetText(FText::FromString(ServerData.HostUsername));
+				FString Connection = FString::Printf(TEXT("%d/%d"), ServerData.CurrentPlayers, ServerData.MaxPlayers);
+				Row->ConnectionInfo->SetText(FText::FromString(Connection));
+				
 				ServerList->AddChild(Row);
 			}
 		}
@@ -45,7 +50,8 @@ void UMainMenuWidget::SetServerList(const TArray<FString> ServerNames)
 
 void UMainMenuWidget::SetSelectIndex(uint32 Index)
 {
-	SelectIndex = Index;
+	SelectedIndex = Index;
+	UpdateChilren();
 }
 
 bool UMainMenuWidget::Initialize()
@@ -95,7 +101,7 @@ void UMainMenuWidget::HostServer()
 
 	if (MenuInterface)
 	{
-		MenuInterface->Host();
+		MenuInterface->Host("Puzzle Platform #123");
 	}
 }
 
@@ -103,10 +109,10 @@ void UMainMenuWidget::JoinServer()
 {
 	if (!MenuInterface) return;
 
-	if (SelectIndex.IsSet())
+	if (SelectedIndex.IsSet())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Server %d selected"), SelectIndex.GetValue());
-		MenuInterface->Join(SelectIndex.GetValue());
+		UE_LOG(LogTemp, Warning, TEXT("Server %d selected"), SelectedIndex.GetValue());
+		MenuInterface->Join(SelectedIndex.GetValue());
 	}
 	else
 	{
@@ -130,6 +136,11 @@ void UMainMenuWidget::OpenMainMenu()
 	{
 		MenuSwitcher->SetActiveWidget(MainMenu);
 	}
+
+	if (ServerList)
+	{
+		ServerList->ClearChildren();
+	}
 }
 
 void UMainMenuWidget::FreshServer()
@@ -149,6 +160,21 @@ void UMainMenuWidget::ExitGame()
 		if (PlayerController)
 		{
 			PlayerController->ConsoleCommand("quit");
+		}
+	}
+}
+
+void UMainMenuWidget::UpdateChilren()
+{
+	if (ServerList)
+	{
+		for (int i = 0; i < ServerList->GetChildrenCount(); ++i)
+		{
+			UServerRowWidget* Row = Cast<UServerRowWidget>(ServerList->GetChildAt(i));
+			if (Row)
+			{
+				Row->bSelected = (SelectedIndex.IsSet() && SelectedIndex.GetValue() == i);
+			}
 		}
 	}
 }
