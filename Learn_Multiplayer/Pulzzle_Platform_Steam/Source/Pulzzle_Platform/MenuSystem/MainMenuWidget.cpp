@@ -64,7 +64,7 @@ bool UMainMenuWidget::Initialize()
 
 	if (HostButton)
 	{
-		HostButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HostServer);
+		HostButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OpenHostMenu);
 	}
 	
 	if (JoinButton)
@@ -87,6 +87,16 @@ bool UMainMenuWidget::Initialize()
 		FreshServerButton->OnClicked.AddDynamic(this, &UMainMenuWidget::FreshServer);
 	}
 
+	if (HostCancleButton)
+	{
+		HostCancleButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OpenMainMenu);
+	}
+
+	if (HostConfirmButton)
+	{
+		HostConfirmButton->OnClicked.AddDynamic(this, &UMainMenuWidget::HostServer);
+	}
+
 	if (ExitGameButton)
 	{
 		ExitGameButton->OnClicked.AddDynamic(this, &UMainMenuWidget::ExitGame);
@@ -97,11 +107,18 @@ bool UMainMenuWidget::Initialize()
 
 void UMainMenuWidget::HostServer()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("I'm Host Server"));
-
+	UE_LOG(LogTemp, Warning, TEXT("I'm Host Server"));
 	if (MenuInterface)
 	{
-		MenuInterface->Host("Puzzle Platform #123");
+		if (HostServerName)
+		{
+			FString HostName = HostServerName->Text.ToString();
+			MenuInterface->Host(HostName);
+		}
+		else
+		{
+			MenuInterface->Host("Puzzle Platform #123");
+		}
 	}
 }
 
@@ -140,6 +157,14 @@ void UMainMenuWidget::OpenMainMenu()
 	if (ServerList)
 	{
 		ServerList->ClearChildren();
+	}
+}
+
+void UMainMenuWidget::OpenHostMenu()
+{
+	if (MenuSwitcher && HostMenu)
+	{
+		MenuSwitcher->SetActiveWidget(HostMenu);
 	}
 }
 

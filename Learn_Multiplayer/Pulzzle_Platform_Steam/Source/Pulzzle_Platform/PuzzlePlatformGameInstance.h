@@ -47,6 +47,8 @@ public:
 	UFUNCTION(Exec)
 	void ExitGame();
 
+	void StartSession();
+
 private:
 	void CreateSession();
 

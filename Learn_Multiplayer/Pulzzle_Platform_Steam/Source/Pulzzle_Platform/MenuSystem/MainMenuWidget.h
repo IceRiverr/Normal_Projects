@@ -40,6 +40,9 @@ private:
 	void OpenMainMenu();
 
 	UFUNCTION()
+	void OpenHostMenu();
+
+	UFUNCTION()
 	void FreshServer();
 
 	UFUNCTION()
@@ -49,10 +52,21 @@ private:
 
 private:
 	UPROPERTY(meta = (BindWidget))
+	class UWidgetSwitcher* MenuSwitcher;
+
+	//
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* MainMenu;
+
+	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* JoinButton;
+
+	//
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* JoinMenu;
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* CancleJoinMenuButton;
@@ -63,17 +77,22 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* FreshServerButton;
 
+	//
+	UPROPERTY(meta = (BindWidget))
+	class UWidget* HostMenu;
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton* HostCancleButton;
+	
+	UPROPERTY(meta = (BindWidget))
+	class UButton* HostConfirmButton;
+
+	UPROPERTY(meta = (BindWidget))
+	class UEditableTextBox* HostServerName;
+
+	// 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* ExitGameButton;
-
-	UPROPERTY(meta = (BindWidget))
-	class UWidgetSwitcher* MenuSwitcher;
-
-	UPROPERTY(meta = (BindWidget))
-	class UWidget* MainMenu;
-
-	UPROPERTY(meta = (BindWidget))
-	class UWidget* JoinMenu;
 
 	UPROPERTY(meta = (BindWidget))
 	class UPanelWidget* ServerList;

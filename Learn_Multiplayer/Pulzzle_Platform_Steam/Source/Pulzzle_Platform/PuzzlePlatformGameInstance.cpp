@@ -10,7 +10,7 @@
 #include "MenuSystem/ServerData.h"
 
 
-const static FName SESSION_NAME = TEXT("Session Puzzle Platform");
+const static FName SESSION_NAME = TEXT("GameSession");
 const static FName SESSION_SETTINGS_SERVER_NAME_KEY = TEXT("Server Name Puzzle Platform");
 
 
@@ -141,6 +141,14 @@ void UPuzzlePlatformGameInstance::ExitGame()
 	}
 }
 
+void UPuzzlePlatformGameInstance::StartSession()
+{
+	if (SessionInterface.IsValid())
+	{
+		SessionInterface->StartSession(SESSION_NAME);
+	}
+}
+
 void UPuzzlePlatformGameInstance::CreateSession()
 {
 	if (SessionInterface.IsValid())
@@ -184,7 +192,7 @@ void UPuzzlePlatformGameInstance::OnCreateSessionComplete(FName SessionName, boo
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			World->ServerTravel("/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap?listen");
+			World->ServerTravel("/Game/Platform/Maps/Lobby?listen");
 		}
 	}
 	else
