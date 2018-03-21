@@ -85,3 +85,15 @@ Learn_Multiplayer/Pulzzle_Platform_Steam/Content/StarterContent/
 Learn_Multiplayer/Pulzzle_Platform_Steam/Intermediate/
 Learn_Multiplayer/Pulzzle_Platform_Steam/Saved/
 Learn_Multiplayer/Pulzzle_Platform_Steam/Binaries/
+TestDataSmith/
+Learn_Multiplayer/StealthShooter/Content/
+Learn_Multiplayer/StealthShooter/Intermediate/Build/
+Learn_Multiplayer/Pulzzle_Platform_Steam/Content/Procedural_Ecosystem/
+Learn_Multiplayer/StealthShooter/Saved/
+Learn_Multiplayer/StealthShooter/Intermediate/
+Learn_Multiplayer/StealthShooter/
+DEM/
+*.pdb
+*.log
+*.tlog
+*.ilk
