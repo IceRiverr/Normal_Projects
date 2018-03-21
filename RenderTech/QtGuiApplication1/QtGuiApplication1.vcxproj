@@ -119,27 +119,33 @@
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Apps\HelloApp\HelloApp.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="QtGuiApplication1.cpp" />
+    <ClCompile Include="Source\BaseApp.cpp" />
     <ClCompile Include="Source\D3d11RenderWidget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="QtGuiApplication1.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="QtGuiApplication1.ui" />
-  </ItemGroup>
-  <ItemGroup>
     <QtRcc Include="QtGuiApplication1.qrc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\EffectCommon.fxh" />
-    <None Include="Shaders\Effects.fx">
-      <FileType>Document</FileType>
-    </None>
+    <QtMoc Include="Source\D3d11RenderWidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="Source\D3d11RenderWidget.h" />
+    <ClInclude Include="Apps\HelloApp\HelloApp.h" />
+    <ClInclude Include="Source\BaseApp.h" />
+    <ClInclude Include="Source\Common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apps\HelloApp\EffectCommon.fxh" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apps\HelloApp\Effects.fx">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

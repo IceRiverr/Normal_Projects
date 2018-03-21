@@ -31,8 +31,11 @@
     <Filter Include="Source">
       <UniqueIdentifier>{cc4c62d2-b3b1-4514-97e1-056588f4a9cd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders">
-      <UniqueIdentifier>{aa5d5452-54d9-4780-b6d0-c1b2272cadfa}</UniqueIdentifier>
+    <Filter Include="Apps">
+      <UniqueIdentifier>{54f51629-ff69-452b-bf65-3504c62cd4b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Apps\HelloApp">
+      <UniqueIdentifier>{14139ef1-7c1f-453a-84d9-f923e1166737}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +48,12 @@
     <ClCompile Include="Source\D3d11RenderWidget.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Source\BaseApp.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Apps\HelloApp\HelloApp.cpp">
+      <Filter>Apps\HelloApp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="QtGuiApplication1.h">
@@ -55,21 +64,27 @@
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="QtGuiApplication1.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
-  </ItemGroup>
-  <ItemGroup>
     <QtRcc Include="QtGuiApplication1.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\EffectCommon.fxh">
-      <Filter>Shaders</Filter>
+    <ClInclude Include="Source\BaseApp.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Common.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Apps\HelloApp\HelloApp.h">
+      <Filter>Apps\HelloApp</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apps\HelloApp\EffectCommon.fxh">
+      <Filter>Apps\HelloApp</Filter>
     </None>
-    <None Include="Shaders\Effects.fx">
-      <Filter>Shaders</Filter>
+    <None Include="Apps\HelloApp\Effects.fx">
+      <Filter>Apps\HelloApp</Filter>
     </None>
   </ItemGroup>
 </Project>
