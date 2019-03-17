@@ -1,0 +1,301 @@
+
+void FLandscapeComponentSceneProxy::OnTransformChanged()
+{
+	// Set Lightmap ScaleBias
+	int32 PatchExpandCountX = 0;
+	int32 PatchExpandCountY = 0;
+	int32 DesiredSize = 1; // output by GetTerrainExpandPatchCount but not used below
+		
+	const float LightMapRatio = ::GetTerrainExpandPatchCount(StaticLightingResolution, PatchExpandCountX, PatchExpandCountY, ComponentSizeQuads, (NumSubsections * (SubsectionSizeQuads + 1)), DesiredSize, StaticLightingLOD);
+		// StaticLightingResolution = 1.0f
+		// SubsectionSizeQuads = 63
+		// StaticLightingLOD = 0
+		
+		// PatchExpandCountX = 4;
+		// DesiredSize = 64;
+		
+	const float LightmapLODScaleX = LightMapRatio / ((ComponentSizeVerts >> StaticLightingLOD) + 2 * PatchExpandCountX);
+		// LightmapLODScaleX = 1 / (64 + 2 * 4) = 0.013889
+		
+	const float LightmapLODScaleY = LightMapRatio / ((ComponentSizeVerts >> StaticLightingLOD) + 2 * PatchExpandCountY);
+		
+	const float LightmapBiasX = PatchExpandCountX * LightmapLODScaleX;
+		// LightmapBiasX = 4 * LightmapLODScaleX = 0.0555f
+	const float LightmapBiasY = PatchExpandCountY * LightmapLODScaleY;
+	
+	const float LightmapScaleX = LightmapLODScaleX * (float)((ComponentSizeVerts >> StaticLightingLOD) - 1) / ComponentSizeQuads;
+		// LightmapScaleX = 0.013889
+	const float LightmapScaleY = LightmapLODScaleY * (float)((ComponentSizeVerts >> StaticLightingLOD) - 1) / ComponentSizeQuads;
+	
+	const float LightmapExtendFactorX = (float)SubsectionSizeQuads * LightmapScaleX;
+		// LightmapExtendFactorX = 63 * 0.013889 = 0.0875f
+	const float LightmapExtendFactorY = (float)SubsectionSizeQuads * LightmapScaleY;
+
+	// cache component's WorldToLocal
+	FMatrix LtoW = GetLocalToWorld();
+	WorldToLocal = LtoW.InverseFast();
+
+	// cache component's LocalToWorldNoScaling
+	LocalToWorldNoScaling = LtoW;
+	LocalToWorldNoScaling.RemoveScaling();
+
+	// Set FLandscapeUniformVSParameters for this subsection
+	FLandscapeUniformShaderParameters LandscapeParams;
+	LandscapeParams.HeightmapUVScaleBias = HeightmapScaleBias;
+	LandscapeParams.WeightmapUVScaleBias = WeightmapScaleBias;
+	LandscapeParams.LocalToWorldNoScaling = LocalToWorldNoScaling;
+
+	LandscapeParams.LandscapeLightmapScaleBias = FVector4(
+		LightmapScaleX,
+		LightmapScaleY,
+		LightmapBiasY,
+		LightmapBiasX);
+	LandscapeParams.SubsectionSizeVertsLayerUVPan = FVector4(
+		SubsectionSizeVerts,
+		1.f / (float)SubsectionSizeQuads,
+		SectionBase.X,
+		SectionBase.Y
+	);
+	LandscapeParams.SubsectionOffsetParams = FVector4(
+		HeightmapSubsectionOffsetU,
+		HeightmapSubsectionOffsetV,
+		WeightmapSubsectionOffset,
+		SubsectionSizeQuads
+	);
+	LandscapeParams.LightmapSubsectionOffsetParams = FVector4(
+		LightmapExtendFactorX,
+		LightmapExtendFactorY,
+		0,
+		0
+	);
+
+	LandscapeUniformShaderParameters.SetContents(LandscapeParams);
+}
+
+	// LightmapRes: Multiplier of lightmap size relative to landscape size
+	// X: (Output) PatchExpandCountX (at Lighting LOD)
+	// Y: (Output) PatchExpandCountY (at Lighting LOD)
+	// ComponentSize: Component size in patches (at LOD 0)
+	// LigtmapSize: Size desired for lightmap (texels)
+	// DesiredSize: (Output) Recommended lightmap size (texels)
+	// return: LightMapRatio
+	static float GetTerrainExpandPatchCount(float LightMapRes, int32& X, int32& Y, int32 ComponentSize, int32 LightmapSize, int32& DesiredSize, uint32 LightingLOD)
+	{
+		if (LightMapRes <= 0) return 0.f;
+
+		// Assuming DXT_1 compression at the moment...
+		int32 PixelPaddingX = GPixelFormats[PF_DXT1].BlockSizeX; // "/2" ?
+		int32 PixelPaddingY = GPixelFormats[PF_DXT1].BlockSizeY;
+		int32 PatchExpandCountX = (LightMapRes >= 1.f) ? (PixelPaddingX) / LightMapRes : (PixelPaddingX);
+		int32 PatchExpandCountY = (LightMapRes >= 1.f) ? (PixelPaddingY) / LightMapRes : (PixelPaddingY);
+
+		X = FMath::Max<int32>(1, PatchExpandCountX >> LightingLOD);
+			// X = 4;
+		Y = FMath::Max<int32>(1, PatchExpandCountY >> LightingLOD);
+			// Y = 4;
+			
+		DesiredSize = (LightMapRes >= 1.f) ? FMath::Min<int32>((int32)((ComponentSize + 1) * LightMapRes), 4096) : FMath::Min<int32>((int32)((LightmapSize)* LightMapRes), 4096);
+			// DesiredSize = 64;
+		int32 CurrentSize = (LightMapRes >= 1.f) ? FMath::Min<int32>((int32)((2 * (X << LightingLOD) + ComponentSize + 1) * LightMapRes), 4096) : FMath::Min<int32>((int32)((2 * (X << LightingLOD) + LightmapSize) * LightMapRes), 4096);
+			// 2 * 4 + 63 + 1 = 72
+		// Find proper Lightmap Size
+		if (CurrentSize > DesiredSize)
+		{
+			// Find maximum bit
+			int32 PriorSize = DesiredSize;
+			while (DesiredSize > 0)
+			{
+				PriorSize = DesiredSize;
+				DesiredSize = DesiredSize & ~(DesiredSize & ~(DesiredSize - 1));
+			}
+
+			DesiredSize = PriorSize << 1; // next bigger size
+			if (CurrentSize * CurrentSize <= ((PriorSize * PriorSize) << 1))
+			{
+				DesiredSize = PriorSize;
+				// DesiredSize = 64
+			}
+		}
+
+		int32 DestSize = (float)DesiredSize / CurrentSize * (ComponentSize*LightMapRes);
+			// 
+		float LightMapRatio = (float)DestSize / (ComponentSize*LightMapRes) * CurrentSize / DesiredSize;
+			// LightMapRatio = 1.0f;
+		return LightMapRatio;
+	}
+	
+	
+
+/** Calculate the texture coordinates generated by Landscape */
+FLandscapeTexCoords GetLandscapeTexCoords(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+	FLandscapeTexCoords Result;
+
+	Result.LayerTexCoord.xy = Intermediates.LocalPosition.xy + LandscapeParameters.SubsectionSizeVertsLayerUVPan.zw + Intermediates.InputPosition.zw * LandscapeParameters.SubsectionOffsetParams.ww;
+#if USING_TESSELLATION
+	Result.LayerTexCoord.z = LodTessellationParams.x;
+	Result.LayerTexCoord.w = LodTessellationParams.y;
+#endif
+
+	Result.WeightMapTexCoord	= Intermediates.LocalPosition.xy * LandscapeParameters.WeightmapUVScaleBias.xy + LandscapeParameters.WeightmapUVScaleBias.zw + Intermediates.InputPosition.zw * LandscapeParameters.SubsectionOffsetParams.zz;
+#if !(ES2_PROFILE || ES3_1_PROFILE)
+	Result.HeightMapTexCoord	= Intermediates.LocalPosition.xy * LandscapeParameters.HeightmapUVScaleBias.xy + LandscapeParameters.HeightmapUVScaleBias.zw + 0.5*LandscapeParameters.HeightmapUVScaleBias.xy + Intermediates.InputPosition.zw * LandscapeParameters.SubsectionOffsetParams.xy;
+#endif
+
+#if NEEDS_LIGHTMAP_COORDINATE
+	Result.LightMapCoordinate			= (Intermediates.LocalPosition.xy * LandscapeParameters.LandscapeLightmapScaleBias.xy + LandscapeParameters.LandscapeLightmapScaleBias.wz + Intermediates.InputPosition.zw * LandscapeParameters.LightmapSubsectionOffsetParams.xy);
+#endif
+	
+	return Result;
+}
+
+分析 Result.LightMapCoordinate 计算公式
+Result.LightMapCoordinate			= (
+	Intermediates.LocalPosition.xy * LandscapeParameters.LandscapeLightmapScaleBias.xy 
+	+ LandscapeParameters.LandscapeLightmapScaleBias.wz 
+	+ Intermediates.InputPosition.zw * LandscapeParameters.LightmapSubsectionOffsetParams.xy);
+	
+	// 具体解释 当前位置在 64*64 的纹理空间中，像素坐标 + sub变形
+	// 然后会在 计算整体的光照uv时，考虑总体的scale和bias
+	
+FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
+{
+	FVertexFactoryIntermediates Intermediates;
+
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM4
+	Intermediates.InputPosition = Input.Position;
+#else
+	Intermediates.InputPosition = Input.PackedPosition * 255.f;
+	float2 SubXY = frac((Intermediates.InputPosition.zw) * .5f) * 2.f;
+	float2 LOD45 = (Intermediates.InputPosition.zw - SubXY) / 255.f;
+	Intermediates.InputPosition.zw = SubXY;
+#endif
+	
+	// ...
+	
+	Intermediates.LocalPosition = lerp( float3(InputPositionLODAdjusted, Height), float3(InputPositionNextLOD, HeightNextLOD), MorphAlpha );
+	
+	// ...
+	
+}
+
+
+FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
+{
+	// ...
+	Interpolants.LightMapCoordinate.xy		= LandscapeTexCoords.LightMapCoordinate.xy * PrecomputedLightingBuffer.LightMapCoordinateScaleBias.xy + PrecomputedLightingBuffer.LightMapCoordinateScaleBias.zw;
+	#if STATICLIGHTING_TEXTUREMASK
+		Interpolants.LightMapCoordinate.zw	= LandscapeTexCoords.LightMapCoordinate.xy * PrecomputedLightingBuffer.ShadowMapCoordinateScaleBias.xy + PrecomputedLightingBuffer.ShadowMapCoordinateScaleBias.zw;
+	#else
+		Interpolants.LightMapCoordinate.zw = 0;
+	#endif
+	// ...
+}
+
+void ULandscapeComponent::GetStaticLightingInfo(FStaticLightingPrimitiveInfo& OutPrimitiveInfo,const TArray<ULightComponent*>& InRelevantLights,const FLightingBuildOptions& Options)
+{
+	if( HasStaticLighting() && GetLandscapeInfo() != nullptr)
+	{
+		const float LightMapRes = StaticLightingResolution > 0.f ? StaticLightingResolution : GetLandscapeProxy()->StaticLightingResolution;
+			// LightMapRes = 1.0f;
+		const int32 LightingLOD = GetLandscapeProxy()->StaticLightingLOD;
+			// LightingLOD = 0
+
+		int32 PatchExpandCountX = 0;
+		int32 PatchExpandCountY = 0;
+		int32 DesiredSize = 1;
+		const float LightMapRatio = ::GetTerrainExpandPatchCount(LightMapRes, PatchExpandCountX, PatchExpandCountY, ComponentSizeQuads, (NumSubsections * (SubsectionSizeQuads+1)), DesiredSize, LightingLOD);
+			// PatchExpandCountX = 4;
+			// PatchExpandCountY = 4;
+			// DesiredSize = 64;
+			
+		int32 SizeX = DesiredSize;
+		int32 SizeY = DesiredSize;
+
+		if (SizeX > 0 && SizeY > 0)
+		{
+			FLandscapeStaticLightingMesh* StaticLightingMesh = new FLandscapeStaticLightingMesh(this, InRelevantLights, PatchExpandCountX, PatchExpandCountY, LightMapRatio, LightingLOD);
+			OutPrimitiveInfo.Meshes.Add(StaticLightingMesh);
+			// Create a static lighting texture mapping
+			OutPrimitiveInfo.Mappings.Add(new FLandscapeStaticLightingTextureMapping(
+				this,StaticLightingMesh,SizeX,SizeY,true));
+		}
+	}
+}
+
+
+FLandscapeStaticLightingMesh::FLandscapeStaticLightingMesh(ULandscapeComponent* InComponent, const TArray<ULightComponent*>& InRelevantLights, int32 InExpandQuadsX, int32 InExpandQuadsY, float InLightMapRatio, int32 InLOD)
+	: FStaticLightingMesh(
+		FMath::Square(((InComponent->ComponentSizeQuads + 1) >> InLOD) - 1 + 2 * InExpandQuadsX) * 2,
+		FMath::Square(((InComponent->ComponentSizeQuads + 1) >> InLOD) - 1 + 2 * InExpandQuadsX) * 2,
+		FMath::Square(((InComponent->ComponentSizeQuads + 1) >> InLOD) + 2 * InExpandQuadsX),
+		FMath::Square(((InComponent->ComponentSizeQuads + 1) >> InLOD) + 2 * InExpandQuadsX),
+		0,
+		!!(InComponent->CastShadow | InComponent->bCastHiddenShadow),
+		false,
+		InRelevantLights,
+		InComponent,
+		InComponent->Bounds.GetBox(),
+		InComponent->GetLightingGuid()
+	)
+	, LandscapeComponent(InComponent)
+	, LightMapRatio(InLightMapRatio)
+	, ExpandQuadsX(InExpandQuadsX)
+	, ExpandQuadsY(InExpandQuadsY)
+{
+	const float LODScale = (float)InComponent->ComponentSizeQuads / (((InComponent->ComponentSizeQuads + 1) >> InLOD) - 1);
+	LocalToWorld = FTransform(FQuat::Identity, FVector::ZeroVector, FVector(LODScale, LODScale, 1)) * InComponent->GetComponentTransform();
+	ComponentSizeQuads = ((InComponent->ComponentSizeQuads + 1) >> InLOD) - 1;
+		// ComponentSizeQuads = 63
+	NumVertices = ComponentSizeQuads + 2*InExpandQuadsX + 1;
+		// NumVertices = 63 + 2 * 4 + 1 = 72;
+	NumQuads = NumVertices - 1;
+		// NumQuads = 71;
+	UVFactor = LightMapRatio / NumVertices;
+		// UVFactor = 0.013889;
+		// 为什么 除以 NumVertices，感觉有问题；
+	bReverseWinding = (LocalToWorld.GetDeterminant() < 0.0f);
+		
+	int32 GeometricLOD = ::GetLightingLOD(InComponent);
+	GetHeightmapData(InLOD, FMath::Max(GeometricLOD, InLOD));
+		// 在构建网格的时候，就需要将地形略微扩大，基本可能达到有 
+		// copy heightmap data for this component...
+		// copy surrounding heightmaps...
+		// 基本是将整体地形的大小扩大了
+		// 有个边界问题，我还没有解决，需要到时候在RenderDoc中来调试一样；
+		// 特别是在 63，64，以及数据的编码问题；
+}
+
+/** Fills in the static lighting vertex data for the Landscape vertex. */
+void FLandscapeStaticLightingMesh::GetStaticLightingVertex(int32 VertexIndex, FStaticLightingVertex& OutVertex) const
+{
+	const int32 X = VertexIndex % NumVertices;
+	const int32 Y = VertexIndex / NumVertices;
+
+	const int32 LocalX = X - ExpandQuadsX;
+	const int32 LocalY = Y - ExpandQuadsY;
+
+	const FColor* Data = &HeightData[X + Y * NumVertices];
+
+	OutVertex.WorldTangentZ.X = 2.0f / 255.f * (float)Data->B - 1.0f;
+	OutVertex.WorldTangentZ.Y = 2.0f / 255.f * (float)Data->A - 1.0f;
+	OutVertex.WorldTangentZ.Z = FMath::Sqrt(1.0f - (FMath::Square(OutVertex.WorldTangentZ.X) + FMath::Square(OutVertex.WorldTangentZ.Y)));
+	OutVertex.WorldTangentX = FVector4(OutVertex.WorldTangentZ.Z, 0.0f, -OutVertex.WorldTangentZ.X);
+	OutVertex.WorldTangentY = OutVertex.WorldTangentZ ^ OutVertex.WorldTangentX;
+
+	// Copied from FLandscapeComponentDataInterface::GetWorldPositionTangents to fix bad lighting when rotated
+	OutVertex.WorldTangentX = LocalToWorld.TransformVectorNoScale(OutVertex.WorldTangentX);
+	OutVertex.WorldTangentY = LocalToWorld.TransformVectorNoScale(OutVertex.WorldTangentY);
+	OutVertex.WorldTangentZ = LocalToWorld.TransformVectorNoScale(OutVertex.WorldTangentZ);
+
+	const uint16 Height = (Data->R << 8) + Data->G;
+	OutVertex.WorldPosition = LocalToWorld.TransformPosition(FVector(LocalX, LocalY, LandscapeDataAccess::GetLocalHeight(Height)));
+
+	OutVertex.TextureCoordinates[0] = FVector2D((float)X / NumVertices, (float)Y / NumVertices); 
+	OutVertex.TextureCoordinates[LANDSCAPE_LIGHTMAP_UV_INDEX].X = X * UVFactor;
+	OutVertex.TextureCoordinates[LANDSCAPE_LIGHTMAP_UV_INDEX].Y = Y * UVFactor;
+		// 这几步的计算有些不明白；
+}
+
+这个过程会影响到 MaterialExport
+
